@@ -163,7 +163,7 @@
                     if (!blacklist_numbers.includes(i))
                     values.push(i);
                 }
-                // shuffle(values);
+                shuffle(values);
 
                 create_circle(circle, radius, screen.width / 2 - circle_x_offset, circle_y_offset, circle_parts, start_angle);
                 current_value_index = circle_parts;
