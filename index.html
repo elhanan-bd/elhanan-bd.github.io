@@ -1,67 +1,144 @@
 <html>
     <head>
         <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/js-confetti@latest/dist/js-confetti.browser.js"></script>
         <title>Number Generator</title>
         <script>
-            // Conf
-            var number_of_participents = 350;
+            // Configuration
+            var number_of_participents = 200;
             var blacklist_numbers = [];  // [5, 200, 74]
 
             var colors = ['#E87C7C', '#6EFCFE', '#FCAB2E'];
-            // End conf
 
-            // Private conf
+            var inner_circle_color = 'white';
+            var outer_circle_color = '#914e00';
+
+            var confetti_radius = 3;
+            var confetti_number = 2000;
+
+            // End Configuration
+
+
+
+            // Private Configuration
+            // Do not change anything here unless you know what you are doing!
 
             var radius = 1000;
-            var circle_x_offset = 50;
+            var circle_x_offset = 0;
             var circle_y_offset = 200;
             var circle_parts = 60;
             var start_angle = 0;
+            var arrow_offset_into_circle = 0;
+            var digit_offset = 9;
 
-            // End provate conf
+            var inner_circle_radius = 300;
+            var outer_circle_offset = 10;
+
+            // End private Configuration
         </script>
+        <style>
+            body {
+              background-image: url('background.jpg');
+            }
+
+            #arrow {
+                position: absolute;
+            }
+
+            .number_text {
+                font-size: 25;
+                font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+                font-weight: bold;
+            }
+
+            #winner_banner {
+                font-size: 300px;
+                position: absolute;
+                left: 50%;
+                top: 20%;
+                padding: 20px;
+                transform: translate(-50%, -50%);
+                color: #fff;
+                text-shadow:
+                    0 0 7px #fff,
+                    0 0 10px #fff,
+                    0 0 21px #fff,
+                    0 0 42px #0fa,
+                    0 0 82px #0fa,
+                    0 0 92px #0fa,
+                    0 0 102px #0fa,
+                    0 0 151px #0fa;
+                text-align: center;
+                animation: glow 1s ease-in-out infinite alternate;
+            }
+            </style>
     </head>
     <body>
         <svg id="circle" width="100%" height="100%">
         </svg>
+        <img id="arrow" src="arrow.png" />
+        <h1 id="winner_banner" class="glow"></h1>
         <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
         <script>
             var circle_middle_x;
             var circle_middle_y;
-            function create_circle(parent, radius, start_x, start_y, circle_parts, start_angle)
+            function create_circle(parent, radius, top_point_x, top_point_y, circle_parts, start_angle)
             {
-                let len = (radius * 2 * Math.PI) / circle_parts;
-                //circle_middle_x = start_x + Math.round(len / 2);
-                circle_middle_x = start_x + (len / 2);
-                circle_middle_y = start_y + radius;
+                let arc_len = (radius * 2 * Math.PI) / circle_parts;
+                let angle_in_radians = 2 * Math.PI / circle_parts;
+                let cord_len = Math.sin(angle_in_radians) * radius;
+                let y_offset = radius - (Math.cos(angle_in_radians) * radius);
+                let start_x = top_point_x - (cord_len / 2);
+                let start_y = top_point_y + y_offset;
+                circle_middle_x = top_point_x;
+                circle_middle_y = top_point_y + radius;
                 let angle_per_slice = 360 / circle_parts;
+                // console.log(`arc_len = ${arc_len}`);
+                // console.log(`angle_in_radians = ${angle_in_radians}`);
+                // console.log(`cord_len = ${cord_len}`);
+                // console.log(`y_offset = ${y_offset}`);
+                // console.log(`start_x = ${start_x}`);
+                // console.log(`start_y = ${start_y}`);
                 let html_string = '';
+                let debug_circle = `<circle cx="${start_x}" cy="${start_y}" r="${3}" fill="red"/>` + 
+                                    `<circle cx="${start_x + cord_len}" cy="${start_y}" r="${3}" fill="green"/>` + 
+                                    `<circle cx="${top_point_x}" cy="${top_point_y}" r="${3}" fill="yellow"/>` + 
+                                    `<circle cx="${top_point_x}" cy="${start_y}" r="${3}" fill="white"/>` + 
+                                    `<circle cx="${circle_middle_x}" cy="${circle_middle_y}" r="${30}" fill="blue"/>`;
                 for (i = 0; i < circle_parts; ++i)
                 {
-                    // let d_str = `M${start},${start} A${radius},${radius} 0 0,1 ${start + Math.round(len)},${start} L${circle_middle_x},${circle_middle_y} L${start},${start}`;
-                    //let d_str = `M${start_x},${start_y} A${radius},${radius} 0 0,1 ${start_x + Math.round(len)},${start_y} L${circle_middle_x},${circle_middle_y} L${start_x},${start_y}`;
-                    let d_str = `M${start_x},${start_y} A${radius},${radius} 0 0,1 ${start_x + len},${start_y} L${circle_middle_x},${circle_middle_y} L${start_x},${start_y}`;
+                    let d_str = `M${start_x},${start_y} A${radius},${radius} 0 0,1 ${start_x + cord_len},${start_y} L${circle_middle_x},${circle_middle_y} L${start_x},${start_y}`;
                     let path_html = `<path d="${d_str}" stroke="black" stroke-width="1" fill="${colors[i % colors.length]}"/>`;
-                    let text_html = `<text x="${circle_middle_x}" y="${start_y + 50}">${values[i]}</text>`;
+                    let text_offset = digit_offset;
+                    if (values[i] >= 10)
+                        text_offset += digit_offset;
+                    if (values[i] >= 100)
+                        text_offset += digit_offset;
+                    // let text_html = `<text class="number_text" dbg="${text_offset}" x="${circle_middle_x - text_offset}" y="${start_y + 50}">${values[i]}</text>`;
+                    let text_html = `<text class="number_text" x="${circle_middle_x}" y="${start_y + 50}" dominant-baseline="middle" text-anchor="middle">${values[i]}</text>`;
                     let curr_angle = i * angle_per_slice;
                     let g_meta_data = `angle="${curr_angle}" index="${i}" step="0" value_updated="0"`;
                     html_string += `<g ${g_meta_data} transform="rotate(${curr_angle} ${circle_middle_x} ${circle_middle_y})">${path_html}${text_html}</g>`;
-                    //html_string += path_html;
                     //break;
                 }
-                let inner_circle_html = `<circle cx="${circle_middle_x}" cy="${circle_middle_y}" r="300" stroke="black" stroke-width="1" fill="white"/>`;
+                let inner_circle_html = `<circle cx="${circle_middle_x}" cy="${circle_middle_y}" r="${inner_circle_radius}" stroke="black" stroke-width="1" fill="${inner_circle_color}"/>`;
+                let outer_circle_radius = outer_circle_offset * 2 + radius;
+                let outer_circle_html = `<circle cx="${circle_middle_x}" cy="${circle_middle_y}" r="${outer_circle_radius}" stroke="black" stroke-width="1" fill="${outer_circle_color}"/>`;
 
-                let niddle_width = 40;
-                let niddle_height = 60;
-                let niddle_start_x = circle_middle_x;
-                let niddle_start_y = start_y;
+                let arrow_width = 40;
+                let arrow_height = 60;
+                let arrow_start_x = top_point_x;
+                let arrow_start_y = top_point_y;
 
-                let niddle_p1 = `${niddle_start_x - niddle_width / 2},${niddle_start_y - niddle_height / 2}`;
-                let niddle_p2 = `${niddle_start_x + niddle_width / 2},${niddle_start_y - niddle_height / 2}`;
-                let niddle_p3 = `${niddle_start_x},${niddle_start_y + niddle_height / 2}`;
-                let niddle_html = `<path d="M${niddle_p1} L${niddle_p2} L${niddle_p3} L${niddle_p1}" fill="Red"/>`;
-                let niddle_point_html = `<path id="niddle_point" d="M${niddle_p3} L${niddle_p3}" />`;
-                parent.html(html_string + inner_circle_html + niddle_html + niddle_point_html);
+                //let arrow_p1 = `${arrow_start_x - arrow_width / 2},${arrow_start_y - arrow_height / 2}`;
+                //let arrow_p2 = `${arrow_start_x + arrow_width / 2},${arrow_start_y - arrow_height / 2}`;
+                //let arrow_p3 = `${arrow_start_x},${arrow_start_y + arrow_height / 2}`;
+                //let arrow_html = `<path d="M${arrow_p1} L${arrow_p2} L${arrow_p3} L${arrow_p1}" fill="Red"/>`;
+                // let arrow_point_html = `<path id="arrow_point" d="M${arrow_p3} L${arrow_p3}" />`;
+                //parent.html(html_string + inner_circle_html + arrow_html + arrow_point_html);
+                parent.html(outer_circle_html + html_string + inner_circle_html); // + debug_circle);
+
+                $('#arrow').css('left', arrow_start_x).css('top', arrow_start_y - arrow_height + arrow_offset_into_circle);
             }
 
             function shuffle(array) {
@@ -94,18 +171,24 @@
             var index;
 
             circle.on('click', function () {
-                if (spin_speed <= 0)
+                if (is_winner_visible())
+                {
+                    clean_last_winner();
+                }
+                else if (spin_speed <= 0)
                 {
                     spin_inital_speed = 20 + Math.random() * 20;
-                    console.log("speed - " + spin_inital_speed);
+                    // console.log("speed - " + spin_inital_speed);
                     spin_slow_down = 0.99;
                     spin_index = 0;
                     index = 0;
+                    bump_arrow = false;
 
                     var spin_interval = setInterval(function () {
                         spin_index++;
                         $('g').each(function() {
                             let angle = parseFloat($(this).attr('angle'));
+                            // Update number
                             if (angle > 90 && angle <= 180 && $(this).attr('value_updated') == 0)
                             {
                                 // set new value
@@ -120,6 +203,10 @@
                             {
                                 $(this).attr('value_updated', "0");
                             }
+
+                            // Check for arrow bump
+                            if (!bump_arrow && angle + spin_speed > 360)
+                                bump_arrow = true;
                             let new_angle = (angle + spin_speed) % 360;
                             $(this).attr('angle', new_angle).attr('transform', `rotate(${new_angle} ${circle_middle_x} ${circle_middle_y})`);
                         });
@@ -139,34 +226,63 @@
                 }
             });
 
+            $('#winner_banner').on('click', function () {
+                clean_last_winner();
+            });
+
+            var jsConfetti;
+            var celebration_audio = new Audio('celebration.mp3');
+
             function find_winner()
             {
                 let tie_angle = 360 / circle_parts / 2;  // 3
+                let winner_text = '';
 
                 $('g').each(function() {
                     let angle = parseFloat($(this).attr('angle'));
                     if (angle == tie_angle)
                     {
-                        alert('TIE');
+                        winner_text = 'TIE';
                     }
                     else if (angle < tie_angle || angle > (360 - tie_angle))
                     {
-                        alert('Winner is ' + $(this).find('text').text());
+                        winner_text = $(this).find('text').text();
                     }
                 });
+
+                $('#winner_banner').text(winner_text);
+                console.log('winner is ' + winner_text);
+                
+                jsConfetti.addConfetti({
+                    confettiRadius: confetti_radius,
+                    confettiNumber: confetti_number,
+                  });
+
+                  celebration_audio.play();
+            }
+
+            function is_winner_visible() {
+                return $('#winner_banner').text() != ''
+            }
+
+            function clean_last_winner() {
+                $('#winner_banner').text('');
             }
 
             $( document ).ready(function() {
-                // Shuffle values
+                // generate values random array
                 for (let i = 1; i <= number_of_participents; ++i)
                 {
                     if (!blacklist_numbers.includes(i))
-                    values.push(i);
+                        values.push(i);
                 }
                 shuffle(values);
 
                 create_circle(circle, radius, screen.width / 2 - circle_x_offset, circle_y_offset, circle_parts, start_angle);
                 current_value_index = circle_parts;
+
+                // Confetti
+                jsConfetti = new JSConfetti();
             });
         </script>
     </body>
